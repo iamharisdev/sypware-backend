@@ -38,14 +38,34 @@ const createSendToken = async (user, statusCode, res) => {
 }
 
 exports.signUp = catchAsync(async (req, res, next) => {
- const {fullname, email, password, confirm_password, phone_number, address} =
-  req.body
+ const {
+  fullname,
+  email,
+  password,
+  confirm_password,
+  phone_number,
+  address,
+  role,
+ } = req.body
 
  if (password !== confirm_password)
   return next(new AppError("Password and confirm Password do not match!", 400))
 
  // Hash the password
  const hashedPassword = await bcrypt.hash(password, 10)
+
+ //Check email in db if email already exists
+ const alreadyExists = await prisma.user.findFirst({
+  where: {
+   email: email,
+  },
+ })
+
+ if (alreadyExists) {
+  return next(
+   new AppError("Email already exists. Please choose a different one", 400)
+  )
+ }
 
  const newUser = await prisma.user.create({
   data: {
@@ -54,6 +74,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
    password: hashedPassword,
    phone_number: phone_number,
    address: address,
+   role,
   },
  })
 

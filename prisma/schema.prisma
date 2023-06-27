@@ -18,7 +18,7 @@ model User {
   password String?
   phone_number String?
   address String?
-  role String[]
+  role String[] @default(["parent"])
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
