@@ -42,13 +42,21 @@ exports.getAll = catchAsync(async (req, res, next) => {
  })
 })
 
-// exports.getChildsByParent = catchAsync(async (req, res, next) => {
-//  const {id} = req.params
-//  const childs = await prisma.child.findMany()
-//  res.status(200).json({
-//   status: "success",
-//   data: {
-//    childs: childs,
-//   },
-//  })
-// })
+exports.getChildsByParent = catchAsync(async (req, res, next) => {
+ const {id} = req.params
+ const children = await prisma.child.findMany({
+  where: {
+   parent_id: Number(id),
+  },
+ })
+ console.log(children)
+ if (!children.length) {
+  return next(new AppError("Parent not found or no children associated", 404))
+ }
+ res.status(200).json({
+  status: "success",
+  data: {
+   children,
+  },
+ })
+})
