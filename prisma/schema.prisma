@@ -14,5 +14,16 @@ datasource db {
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
-  name  String?
+  fullname  String?
+  password String?
+  phone_number String?
+  address String?
+  role String[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+enum Roles {
+  parent
+  moderator
 }
