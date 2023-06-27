@@ -1,6 +1,7 @@
 const express = require("express")
 const app = express()
 const authRouter = require("./routes/authRoutes")
+const childRouter = require("./routes/childRoutes")
 const AppError = require("./utils/appError")
 const port = process.env.PORT || 3000
 const bodyParser = require("body-parser")
@@ -15,6 +16,7 @@ app.use(express.urlencoded({extended: true, limit: "10kb"}))
 app.use(cookieParser())
 
 app.use("/api/v1/users", authRouter)
+app.use("/api/v1/child", childRouter)
 
 app.all("*", (req, _res, next) => {
  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404))
