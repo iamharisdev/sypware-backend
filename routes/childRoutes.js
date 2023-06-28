@@ -6,5 +6,7 @@ const router = express.Router()
 router.route("/").post(childController.createChild)
 router.route("/").get(childController.getAll)
 router.route("/:id").get(childController.getChildsByParent)
+router.route("/").patch(childController.updateChild)
+router.route("/").delete(childController.deleteChild)
 
 module.exports = router
