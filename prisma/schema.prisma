@@ -29,9 +29,39 @@ model Child {
   name String?
   phone_number String?
   user User? @relation(fields: [parent_id], references: [id])
+  device Device[]
   parent_id Int
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+}
+
+model Device {
+  id Int @id @default(autoincrement())
+  child_id Int
+  child Child? @relation(fields: [child_id],references: [id])
+  screenLock ScreenLock?
+  device_info String @default("pending")
+  platform String @default("pending")
+  device_name String @default("pending")
+  screenshots_enabled Boolean @default(false)
+  calllogs_enabled Boolean @default(false)
+  messages_enabled Boolean @default(false)
+  location_enable Boolean @default(false)
+  apps_usage_enable Boolean @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model ScreenLock{
+ id Int @id @default(autoincrement())
+ device Device? @relation(fields: [device_id],references: [id])
+ device_id Int @unique
+ status Boolean @default(false)
+ pin Int
+ created_at DateTime @default(now())
+ updated_at DateTime @updatedAt
+
+
 }
 
 enum Roles {
