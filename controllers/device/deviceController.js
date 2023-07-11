@@ -40,7 +40,7 @@ const {device_id,status,pin} = req.body
 try{
 
 
- if (!device_id||!pin)
+ if (!device_id||!pin||!status)
   return  next(
    new AppError(!device_id?"Please provide device_id!":!status?"Please provide device status!":"Please provide screen pin!" , 400)
   )
@@ -67,9 +67,7 @@ catch(e){
 })
 
 exports.loginWithPin=catchAsync(async(req,res,next)=>{
-
    const {pin,device_id} = req?.body
-
    const check = await prisma.screenLock.findFirst({
       where:{
          device_id:device_id,
@@ -82,14 +80,10 @@ if (!check) {
   return next(new AppError("device not found!", 400))
  }
 
-
-
 res.status(200).json({
   status: "success",
   data: check
  })
-   
-
 })
 
 
