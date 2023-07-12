@@ -41,8 +41,6 @@ exports.createChild = catchAsync(async (req, res, next) => {
  })
 })
 
-
-
 exports.updateChild = catchAsync(async (req, res, next) => {
  const {id, name, phone_number, parent_id} = req.body
 

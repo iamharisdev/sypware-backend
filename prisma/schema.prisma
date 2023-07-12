@@ -68,7 +68,7 @@ model ScreenLock{
 
 
 model ScreenShots{
-  id Int
+ id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int @unique
   screenShot_Url String
@@ -78,16 +78,10 @@ model ScreenShots{
 }
 
 model CallLogs{
-  id Int
+  id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int @unique
-  recipient_name String
-  caller_name String
-  caller_number String
-  recipient_number String
-  call_duration String
-  call_timeStamp String
-  call_type String
+  callLogArray Json
   created_at DateTime @default(now())
  updated_at DateTime @updatedAt
 
@@ -95,22 +89,17 @@ model CallLogs{
 
 
 model Messages{
-  id Int
+  id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int @unique
-  sender_name String
-  reciver_name String
-  sender_number String
-  reciver_number String
-  timeStamp String
-  message_type String
+  messageArray Json
   created_at DateTime @default(now())
  updated_at DateTime @updatedAt
 }
 
 
 model Location{
-  id Int
+  id Int @id @default(autoincrement())        
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int @unique
   latitude Float

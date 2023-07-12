@@ -94,7 +94,7 @@ exports.login = catchAsync(async (req, res, next) => {
   },
  })
 
- console.log("[user]", user)
+
 
  if (!user || !(await comparePassword(password, user.password))) {
   return next(new AppError("Incorrect email or password", 401))
