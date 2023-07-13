@@ -4,9 +4,9 @@ const AppError = require("../utils/appError")
 const catchAsync = require("../utils/catchAsync")
 const prisma = require("../prisma")
 const bcrypt = require("bcrypt")
-const {AddMinutesToDate,dates} = require('../utils/exports')
-const { encode, decode } = require('../middlewares/crypt');
-const SendEmail = require('../utils/email');
+const {AddMinutesToDate, dates} = require("../utils/exports")
+const {encode, decode} = require("../middlewares/crypt")
+const SendEmail = require("../utils/email")
 
 const signToken = (id) => {
  return jwt.sign({id}, process.env.JWT_SECRET, {
@@ -97,8 +97,6 @@ exports.login = catchAsync(async (req, res, next) => {
   },
  })
 
-
-
  if (!user || !(await comparePassword(password, user.password))) {
   return next(new AppError("Incorrect email or password", 401))
  }
@@ -106,115 +104,109 @@ exports.login = catchAsync(async (req, res, next) => {
  createSendToken(user, 200, res)
 })
 
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+ try {
+  const {email} = req.body
+  const otp = Math.floor(1000 + Math.random() * 9000)
+  const now = new Date()
+  const expiration_time = AddMinutesToDate(now, 10)
 
-
-exports.forgotPassword = catchAsync(async(req,res,next)=>{
- try{
-  const { email } = req.body;
-  const otp = Math.floor(1000 + Math.random() * 9000);
-  const now = new Date();
-  const expiration_time = AddMinutesToDate(now, 10);
-  
-
- //Create OTP instance in DB
- const otp_instance = await prisma.otp.create({
-  data: {
+  //Create OTP instance in DB
+  const otp_instance = await prisma.otp.create({
+   data: {
     otp: otp,
     expiration_time: new Date(expiration_time),
-  },
-});
+   },
+  })
 
   // Create details object containing the email and otp id
   var details = {
-    timestamp: now,
-    check: email,
-    success: true,
-    message: 'OTP sent to user',
-    otp_id: otp_instance?.id,
-  };
+   timestamp: now,
+   check: email,
+   success: true,
+   message: "OTP sent to user",
+   otp_id: otp_instance?.id,
+  }
 
- // Encrypt the details object
-  let encoded = await encode(JSON.stringify(details));
+  // Encrypt the details object
+  let encoded = await encode(JSON.stringify(details))
 
   var mailOptions = {
-    to: email,
-    subject: 'Sending Email using Node.js for reset password',
-    text: `Your OTP code is ${otp}`,
-  };
+   to: email,
+   subject: "Sending Email using Node.js for reset password",
+   text: `Your OTP code is ${otp}`,
+  }
 
- await SendEmail(mailOptions,encoded,otp,res)
- }
- catch(e){
-   const {message} = e;
-   return next(new AppError(message, 401))
+  await SendEmail(mailOptions, encoded, otp, res)
+ } catch (e) {
+  const {message} = e
+  return next(new AppError(message, 401))
  }
 })
 
-exports.verifyOtp=catchAsync(async(req,res,next)=>{
+exports.verifyOtp = catchAsync(async (req, res, next) => {
+ try {
+  var currentdate = new Date()
+  const {verification_key, otp, email} = req?.body
+  let decoded = await decode(verification_key)
+  var obj = JSON.parse(decoded)
 
-try{
-  var currentdate = new Date();
-     const { verification_key, otp, email } = req?.body;
-   let  decoded = await decode(verification_key);
-    var obj = JSON.parse(decoded);
-
- // Check if the OTP was meant for the same email or phone number for which it is being verified
+  // Check if the OTP was meant for the same email or phone number for which it is being verified
   if (email != obj?.check) {
-     return next(new AppError('OTP was not sent to this particular email or phone number', 400))
+   return next(
+    new AppError(
+     "OTP was not sent to this particular email or phone number",
+     400
+    )
+   )
   }
 
-   const otp_instance = await prisma.Otp.findFirst({ where: { id: obj.otp_id } });
+  const otp_instance = await prisma.Otp.findFirst({where: {id: obj.otp_id}})
 
-
-   //  //Check if OTP is available in the DB
+  //  //Check if OTP is available in the DB
   if (otp_instance != null) {
-    //Check if OTP is already used or not
-    if (otp_instance.verified != true) {
-      // //Check if OTP is expired or not
-      if (dates.compare(otp_instance.expiration_time, currentdate) == 1) {
-        //Check if OTP is equal to the OTP in the DB
-        if (otp === otp_instance.otp) {
-          // Mark OTP as verified or used
+   //Check if OTP is already used or not
+   if (otp_instance.verified != true) {
+    // //Check if OTP is expired or not
+    if (dates.compare(otp_instance.expiration_time, currentdate) == 1) {
+     //Check if OTP is equal to the OTP in the DB
+     if (otp === otp_instance.otp) {
+      // Mark OTP as verified or used
 
-          await prisma.Otp.update({ 
-            where: { 
-               id: obj.otp_id
-             },
-             data:{
-               verified:true
-             }
-             });
-          const response = {
-            Status: 200,
-            Details: 'OTP Matched',
-            Check: email,
-          };
-          return res.status(200).send(response);
-        } else {
-          const response = { Status: 'Failure', Details: 'OTP NOT Matched' };
-          return res.status(400).send(response);
-        }
-      } else {
-        const response = { Status: 'Failure', Details: 'OTP Expired' };
-        return res.status(400).send(response);
+      await prisma.Otp.update({
+       where: {
+        id: obj.otp_id,
+       },
+       data: {
+        verified: true,
+       },
+      })
+      const response = {
+       Status: 200,
+       Details: "OTP Matched",
+       Check: email,
       }
+      return res.status(200).send(response)
+     } else {
+      const response = {Status: "Failure", Details: "OTP NOT Matched"}
+      return res.status(400).send(response)
+     }
     } else {
-      const response = { Status: 'Failure', Details: 'OTP Already Used' };
-      return res.status(400).send(response);
+     const response = {Status: "Failure", Details: "OTP Expired"}
+     return res.status(400).send(response)
     }
+   } else {
+    const response = {Status: "Failure", Details: "OTP Already Used"}
+    return res.status(400).send(response)
+   }
   } else {
-    const response = { Status: 'Failure', Details: 'Bad Request' };
-    return res.status(400).send(response);
+   const response = {Status: "Failure", Details: "Bad Request"}
+   return res.status(400).send(response)
   }
-
-
-
-}
-catch(e){
-   const {message} = e
-   return next(new AppError(message, 400))
-}
-
+ } catch (e) {
+  const {message} = e
+  return next(new AppError(message, 400))
+ }
 })
 
 exports.logout = (req, res) => {

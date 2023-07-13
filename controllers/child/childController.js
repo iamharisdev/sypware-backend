@@ -17,8 +17,6 @@ exports.createChild = catchAsync(async (req, res, next) => {
   )
  }
 
-
-
  const newChild = await prisma.child.create({
   data: {
    name,
@@ -28,15 +26,15 @@ exports.createChild = catchAsync(async (req, res, next) => {
  })
 
  const newDevice = await prisma.device.create({
-   data:{
-      child_id:newChild?.id,
-   }
+  data: {
+   child_id: newChild?.id,
+  },
  })
  res.status(200).json({
   status: "success",
   data: {
    child: newChild,
-   device:newDevice
+   device: newDevice,
   },
  })
 })
