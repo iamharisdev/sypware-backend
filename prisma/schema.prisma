@@ -108,6 +108,13 @@ model Location{
  updated_at DateTime @updatedAt
 }
 
+model Otp {
+  id            Int      @id @default(autoincrement())
+  otp           Int
+  expiration_time DateTime @default(now())
+  verified      Boolean  @default(false) @map("verified") // Use the `@map` attribute to specify the database column name
+}
+
 enum Roles {
   parent
   moderator
