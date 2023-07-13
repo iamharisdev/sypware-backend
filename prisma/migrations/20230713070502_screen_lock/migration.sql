@@ -10,5 +10,8 @@ CREATE TABLE "ScreenLock" (
     CONSTRAINT "ScreenLock_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateIndex
+CREATE UNIQUE INDEX "ScreenLock_device_id_key" ON "ScreenLock"("device_id");
+
 -- AddForeignKey
 ALTER TABLE "ScreenLock" ADD CONSTRAINT "ScreenLock_device_id_fkey" FOREIGN KEY ("device_id") REFERENCES "Device"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
