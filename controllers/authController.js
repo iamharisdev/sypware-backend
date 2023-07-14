@@ -209,6 +209,69 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
  }
 })
 
+
+exports.changePassword=catchAsync(async(req,res,next)=>{
+  try{
+const {email,password,otp} = req?.body;
+
+if(!email||!password){
+  return next(new AppError(!email?"Email is required!":"Password is required!",401));
+}
+
+const check = await prisma.user.findUnique({
+  where:{
+    email:email
+  }
+})
+
+if(!check){
+  return next(new AppError('User not found!',404));
+}
+
+const check_otp_verified = await prisma.otp.findFirst({
+  where:{
+    otp:otp,
+  }
+})
+
+if(!check_otp_verified){
+   return next(new AppError('Enter correct OTP!',400));
+}
+if(!check_otp_verified?.verified){
+  return next(new AppError('OTP is not verified!',400));
+}
+
+//Delete OTP record after verified
+await prisma.otp.delete({
+  where: {
+    id:check_otp_verified?.id
+  }
+});
+
+const result = await prisma.user.update({
+  where:{
+    email:email
+  },
+  data:{
+    password:password
+  }
+})
+
+
+res.status(200).json({
+  status:"success",
+  data:result
+})
+
+  }
+  catch(e){
+    const {message} = e
+    return next(new AppError(message,500))
+  }
+
+
+})
+
 exports.logout = (req, res) => {
  res.cookie("jwt", "loggedout", {
   expires: new Date(Date.now() + 10 * 1000),
