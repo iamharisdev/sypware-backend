@@ -14,23 +14,46 @@ datasource db {
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
-  fullname  String?
-  password String?
-  phone_number String?
-  address String?
+  fullname  String
+  password String
+  phone_number String
+  address String
+  image String?
   Child Child[]
+  setting Setting?
+  notification Notification[]
   role String[] @default(["parent"])
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
+model Setting {
+   id    Int     @id @default(autoincrement())
+  notification_enabled Boolean @default(false)
+  user User? @relation(fields: [parent_id], references: [id])
+  parent_id Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+  notification_title String
+  notification_type String?
+  notification_content String
+  user User? @relation(fields:[parent_id],references: [id])
+  parent_id Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
 model Child {
   id Int  @id @default(autoincrement())
-  name String?
-  phone_number String?
+  name String
+  phone_number String
+  image String?
   user User? @relation(fields: [parent_id], references: [id])
   device Device[]
-  parent_id Int
+  parent_id Int 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -70,18 +93,17 @@ model ScreenLock{
 model ScreenShots{
  id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
-  device_id Int @unique
-  screenShot_Url String
+  device_id Int 
+  screenShot String
   created_at DateTime @default(now())
- updated_at DateTime @updatedAt
-
+  updated_at DateTime @updatedAt
 }
 
 model CallLogs{
   id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int @unique
-  callLogArray Json
+  callLogArray Json?
   created_at DateTime @default(now())
  updated_at DateTime @updatedAt
 
@@ -92,7 +114,7 @@ model Messages{
   id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int @unique
-  messageArray Json
+  messageArray Json?
   created_at DateTime @default(now())
  updated_at DateTime @updatedAt
 }

@@ -1,8 +1,10 @@
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 // To add minutes to the current time
 const AddMinutesToDate = (date, minutes) => {
   return new Date(date.getTime() + minutes * 60000);
 };
-
 
 // Function to Compares dates (expiration time and current time in our case)
 var dates = {
@@ -55,4 +57,36 @@ var dates = {
   },
 };
 
-module.exports = { AddMinutesToDate ,dates};
+const signToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+async function comparePassword(password, hashedPassword) {
+  return await bcrypt.compare(password, hashedPassword);
+}
+
+const createSendToken = async (user, statusCode, res) => {
+  const token = signToken(user._id);
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    ),
+    httpOnly: true,
+  };
+
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  res.cookie('jwt', token, cookieOptions);
+  // Remove password from output
+  user.password = undefined;
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
+module.exports = { AddMinutesToDate, dates, comparePassword, createSendToken };

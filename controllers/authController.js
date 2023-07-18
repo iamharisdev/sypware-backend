@@ -4,41 +4,14 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const prisma = require('../prisma');
 const bcrypt = require('bcrypt');
-const { AddMinutesToDate, dates } = require('../utils/exports');
+const {
+  AddMinutesToDate,
+  dates,
+  createSendToken,
+  comparePassword,
+} = require('../utils/exports');
 const { encode, decode } = require('../middlewares/crypt');
 const SendEmail = require('../utils/email');
-
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
-};
-
-async function comparePassword(password, hashedPassword) {
-  return await bcrypt.compare(password, hashedPassword);
-}
-
-const createSendToken = async (user, statusCode, res) => {
-  const token = signToken(user._id);
-  const cookieOptions = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
-    ),
-    httpOnly: true,
-  };
-
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-  res.cookie('jwt', token, cookieOptions);
-  // Remove password from output
-  user.password = undefined;
-  res.status(statusCode).json({
-    status: 'success',
-    token,
-    data: {
-      user,
-    },
-  });
-};
 
 exports.signUp = catchAsync(async (req, res, next) => {
   const {
@@ -239,6 +212,8 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
 exports.changePassword = catchAsync(async (req, res, next) => {
   try {
     const { email, password, otp } = req?.body;
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     if (!email || !password || !otp) {
       return next(
@@ -288,7 +263,7 @@ exports.changePassword = catchAsync(async (req, res, next) => {
         email: email,
       },
       data: {
-        password: password,
+        password: hashedPassword,
       },
     });
 

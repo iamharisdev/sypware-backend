@@ -1,4 +1,5 @@
 const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
 const AppError = require('../../utils/appError');
 const catchAsync = require('../../utils/catchAsync');
 const prisma = require('../../prisma');
@@ -25,27 +26,24 @@ exports.createChild = catchAsync(async (req, res, next) => {
     },
   });
 
-  const newDevice = await prisma.device.create({
-    data: {
-      child_id: newChild?.id,
-    },
-  });
+  let token = jwt.sign({ id: newChild.id }, process.env.JWT_SECRET);
+
   res.status(200).json({
     status: 'success',
     data: {
       child: newChild,
-      device: newDevice,
+      childToken: token,
     },
   });
 });
 
 exports.updateChild = catchAsync(async (req, res, next) => {
-  const { id, name, phone_number, parent_id } = req.body;
+  const { child_id, name, phone_number, parent_id } = req?.body;
 
   // Check if the child with the specified ID exists
   const existingChild = await prisma.child.findUnique({
     where: {
-      id: id,
+      id: child_id,
     },
   });
 
@@ -66,7 +64,7 @@ exports.updateChild = catchAsync(async (req, res, next) => {
 
   const updatedChild = await prisma.child.update({
     where: {
-      id: id,
+      id: child_id,
     },
     data: {
       name: name,
@@ -84,7 +82,7 @@ exports.updateChild = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteChild = catchAsync(async (req, res, next) => {
-  const { id } = req.body;
+  const { id } = req?.body;
 
   const existingChild = await prisma.child.findUnique({
     where: {
@@ -109,11 +107,16 @@ exports.deleteChild = catchAsync(async (req, res, next) => {
 });
 
 exports.getAll = catchAsync(async (req, res, next) => {
-  const childs = await prisma.child.findMany();
-  res.status(200).json({
-    status: 'success',
-    data: {
-      childs: childs,
-    },
-  });
+  try {
+    const childs = await prisma.child.findMany();
+    res.status(200).json({
+      status: 'success',
+      data: {
+        childs: childs,
+      },
+    });
+  } catch (e) {
+    const { message } = e;
+    return next(new AppError(message, 500));
+  }
 });
