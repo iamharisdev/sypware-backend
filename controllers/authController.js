@@ -24,18 +24,13 @@ exports.signUp = catchAsync(async (req, res, next) => {
     role,
   } = req.body;
 
-  if (password !== confirm_password)
-    return next(
-      new AppError('Password and confirm Password do not match!', 400),
-    );
-
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
 
   //Check email in db if email already exists
   const alreadyExists = await prisma.user.findFirst({
     where: {
-      email: email,
+      email: email.toLowerCase(),
     },
   });
 
@@ -48,10 +43,8 @@ exports.signUp = catchAsync(async (req, res, next) => {
   const newUser = await prisma.user.create({
     data: {
       fullname: fullname,
-      email: email,
+      email: email.toLowerCase(),
       password: hashedPassword,
-      phone_number: phone_number,
-      address: address,
       role,
     },
   });

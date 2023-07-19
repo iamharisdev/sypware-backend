@@ -73,6 +73,20 @@ CREATE TABLE "Device" (
 );
 
 -- CreateTable
+CREATE TABLE "DeviceSettings" (
+    "id" SERIAL NOT NULL,
+    "screenShots_interval" TEXT,
+    "callLogs_interval" TEXT,
+    "messages_interval" TEXT,
+    "location_interval" TEXT,
+    "device_id" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DeviceSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ScreenLock" (
     "id" SERIAL NOT NULL,
     "device_id" INTEGER NOT NULL,
@@ -146,10 +160,10 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "Setting_parent_id_key" ON "Setting"("parent_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ScreenLock_device_id_key" ON "ScreenLock"("device_id");
+CREATE UNIQUE INDEX "DeviceSettings_device_id_key" ON "DeviceSettings"("device_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ScreenShots_device_id_key" ON "ScreenShots"("device_id");
+CREATE UNIQUE INDEX "ScreenLock_device_id_key" ON "ScreenLock"("device_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CallLogs_device_id_key" ON "CallLogs"("device_id");
@@ -171,6 +185,9 @@ ALTER TABLE "Child" ADD CONSTRAINT "Child_parent_id_fkey" FOREIGN KEY ("parent_i
 
 -- AddForeignKey
 ALTER TABLE "Device" ADD CONSTRAINT "Device_child_id_fkey" FOREIGN KEY ("child_id") REFERENCES "Child"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeviceSettings" ADD CONSTRAINT "DeviceSettings_device_id_fkey" FOREIGN KEY ("device_id") REFERENCES "Device"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ScreenLock" ADD CONSTRAINT "ScreenLock_device_id_fkey" FOREIGN KEY ("device_id") REFERENCES "Device"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

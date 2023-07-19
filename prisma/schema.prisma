@@ -14,10 +14,10 @@ datasource db {
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
-  fullname  String
-  password String
-  phone_number String
-  address String
+  fullname  String?
+  password String?
+  phone_number String?
+  address String?
   image String?
   Child Child[]
   setting Setting?
@@ -67,6 +67,7 @@ model Device {
   callLogs CallLogs[]
   messages Messages[]
   location Location[]
+  deviceSetting DeviceSettings[]
   device_info String @default("pending")
   platform String @default("pending")
   device_name String @default("pending")
@@ -75,6 +76,18 @@ model Device {
   messages_enabled Boolean @default(false)
   location_enable Boolean @default(false)
   apps_usage_enable Boolean @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model DeviceSettings {
+  id Int @id @default(autoincrement())
+  screenShots_interval String?
+  callLogs_interval String?
+  messages_interval String?
+  location_interval String?
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int @unique
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }

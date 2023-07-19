@@ -25,4 +25,8 @@ router
   .route('/screenshot')
   .post(upload.single('screenShot_Url'), deviceController.createScreenShots);
 
+router.route('/screenshot').get(deviceController.getAllScreenShots);
+
+router.route('/screenshot').delete(deviceController.deleteScreenShots);
+
 module.exports = router;
