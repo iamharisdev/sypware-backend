@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.route('/').post(childController.createChild);
 router.route('/').get(childController.getAll);
+router.route('/:parent_id').get(childController.getChildsByParentId);
 router.route('/').patch(childController.updateChild);
 router.route('/').delete(childController.deleteChild);
 

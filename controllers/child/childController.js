@@ -22,7 +22,9 @@ exports.createChild = catchAsync(async (req, res, next) => {
     data: {
       name,
       phone_number,
-      parent_id,
+      user: {
+        connect: { id: parent_id },
+      },
     },
   });
 
@@ -69,7 +71,9 @@ exports.updateChild = catchAsync(async (req, res, next) => {
     data: {
       name: name,
       phone_number: phone_number,
-      parent_id: parent_id,
+      user: {
+        connect: { id: parent_id },
+      },
     },
   });
 
@@ -109,6 +113,49 @@ exports.deleteChild = catchAsync(async (req, res, next) => {
 exports.getAll = catchAsync(async (req, res, next) => {
   try {
     const childs = await prisma.child.findMany();
+
+    if (childs.length == 0) {
+      return next(new AppError('Child not found!', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        childs: childs,
+      },
+    });
+  } catch (e) {
+    const { message } = e;
+    return next(new AppError(message, 500));
+  }
+});
+
+exports.getChildsByParentId = catchAsync(async (req, res, next) => {
+  try {
+    const parent_id = parseInt(req?.params?.parent_id);
+
+    if (!parent_id) {
+      return next(new AppError('Parent id is required!', 400));
+    }
+
+    const check = await prisma.user.findFirst({
+      where: {
+        id: parent_id,
+      },
+    });
+    if (!check) {
+      return next(new AppError('Parent is not found!', 404));
+    }
+
+    const childs = await prisma.child.findMany({
+      where: {
+        parent_id,
+      },
+    });
+
+    if (childs.length == 0) {
+      return next(new AppError('Child not found!', 404));
+    }
     res.status(200).json({
       status: 'success',
       data: {

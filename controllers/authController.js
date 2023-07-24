@@ -175,25 +175,25 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
               },
             });
             const response = {
-              Status: 200,
-              Details: 'OTP Matched',
-              Check: email,
+              status: 'success',
+              message: 'OTP Matched',
+              email: email,
             };
             return res.status(200).send(response);
           } else {
-            const response = { Status: 'Failure', Details: 'OTP NOT Matched' };
+            const response = { status: 'failure', message: 'OTP NOT Matched' };
             return res.status(400).send(response);
           }
         } else {
-          const response = { Status: 'Failure', Details: 'OTP Expired' };
+          const response = { status: 'failure', message: 'OTP Expired' };
           return res.status(400).send(response);
         }
       } else {
-        const response = { Status: 'Failure', Details: 'OTP Already Used' };
+        const response = { status: 'failure', message: 'OTP Already Used' };
         return res.status(400).send(response);
       }
     } else {
-      const response = { Status: 'Failure', Details: 'Bad Request' };
+      const response = { status: 'failure', message: 'Bad Request' };
       return res.status(400).send(response);
     }
   } catch (e) {

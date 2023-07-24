@@ -16,6 +16,7 @@ exports.auth = (req, res, next) => {
   try {
     let temp = berearToken.split(' ');
     const payload = jwt.verify(temp[1], process.env.JWT_SECRET);
+    console.log(payload);
     req.user = payload;
     next();
   } catch (e) {
