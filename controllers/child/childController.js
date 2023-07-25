@@ -1,4 +1,3 @@
-const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const AppError = require('../../utils/appError');
 const catchAsync = require('../../utils/catchAsync');
@@ -142,24 +141,19 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
       where: {
         id: parent_id,
       },
+      include: { Child: true },
     });
     if (!check) {
       return next(new AppError('Parent is not found!', 404));
     }
 
-    const childs = await prisma.child.findMany({
-      where: {
-        parent_id,
-      },
-    });
-
-    if (childs.length == 0) {
+    if (check.length == 0) {
       return next(new AppError('Child not found!', 404));
     }
     res.status(200).json({
       status: 'success',
       data: {
-        childs: childs,
+        childs: check.Child,
       },
     });
   } catch (e) {

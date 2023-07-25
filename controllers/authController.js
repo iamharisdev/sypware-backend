@@ -181,7 +181,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
             };
             return res.status(200).send(response);
           } else {
-            const response = { status: 'failure', message: 'OTP NOT Matched' };
+            const response = { status: 'failure', message: 'OTP Not Matched' };
             return res.status(400).send(response);
           }
         } else {

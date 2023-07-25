@@ -86,29 +86,24 @@ exports.getAllDevices = catchAsync(async (req, res, next) => {
       return next(new AppError('Child_id is required!', 400));
     }
 
-    const check = await prisma.child.findFirst({
+    const check = await prisma.child.findMany({
       where: {
         id: child_id,
       },
+      include: { device: true },
     });
 
     if (!check) {
-      return next(new AppError('Child  is not found!', 404));
+      return next(new AppError('Child is not found!', 404));
     }
 
-    const result = await prisma.device.findMany({
-      where: {
-        child_id: child_id,
-      },
-    });
-
-    if (result.length == 0) {
+    if (check.length == 0) {
       return next(new AppError('No record found!'));
     }
 
     res.status(200).json({
       status: 'success',
-      data: result,
+      data: check,
     });
   } catch (e) {
     const { message } = e;
@@ -350,24 +345,17 @@ exports.updateCallLogs = catchAsync(async (req, res, next) => {
       );
     }
 
-    const check2 = await prisma.device.findFirst({
-      where: {
-        id: device_id,
-      },
+    const device = await prisma.device.findFirst({
+      where: { id: device_id },
+      include: { callLogs: true },
     });
 
-    if (!check2) {
+    if (!device) {
       return next(new AppError('Device not found!', 404));
     }
 
-    const check = await prisma.callLogs.findUnique({
-      where: {
-        device_id: device_id,
-      },
-    });
-
-    if (!check) {
-      return next(new AppError(`Record not found!`, 404));
+    if (!device.callLogs || device.callLogs.length === 0) {
+      return next(new AppError(`No call logs found for the device!`, 404));
     }
 
     const result = await prisma.callLogs.update({
@@ -395,19 +383,20 @@ exports.getCallLogsByDeviceId = catchAsync(async (req, res, next) => {
       return next(new AppError('Device_id is required!', 400));
     }
 
-    const result = await prisma.callLogs.findMany({
+    const result = await prisma.device.findFirst({
       where: {
-        device_id: device_id,
+        id: device_id,
       },
+      include: { callLogs: true },
     });
 
-    if (result.length == 0) {
+    if (!result) {
       return next(new AppError('Record not found!', 404));
     }
 
     res.status(200).json({
       status: 'success',
-      data: result,
+      data: result?.callLogs,
     });
   } catch (e) {
     const { message } = e;
@@ -469,13 +458,18 @@ exports.updateMessages = catchAsync(async (req, res, next) => {
       );
     }
 
-    const check = await prisma.messages.findUnique({
+    const check = await prisma.device.findFirst({
       where: {
-        device_id: device_id,
+        id: device_id,
       },
+      include: { messages: true },
     });
 
     if (!check) {
+      return next(new AppError('Device id not found!', 404));
+    }
+
+    if (!check.messages) {
       return next(new AppError('Record not found!', 404));
     }
 
@@ -541,13 +535,15 @@ exports.createScreenShots = catchAsync(async (req, res, next) => {
       },
     });
     if (!check) {
-      return next(new AppError('Device_id not exist!', 404));
+      return next(new AppError('Device id not exist!', 404));
     }
 
     const result = await prisma.screenShots.create({
       data: {
-        device_id: id,
         screenShot: path,
+        device: {
+          connect: { id },
+        },
       },
     });
 
@@ -563,32 +559,29 @@ exports.createScreenShots = catchAsync(async (req, res, next) => {
 
 exports.getAllScreenShots = catchAsync(async (req, res, next) => {
   try {
-    const { device_id } = req?.body;
-    if (!device_id) {
+    const { device_id } = req?.params;
+    let id = parseInt(device_id);
+
+    if (!id) {
       return next(new AppError('Device id is required!', 400));
     }
     const check = await prisma.device.findUnique({
-      where: { id: device_id },
+      where: { id },
+      include: { screenShots: true },
     });
 
     if (!check) {
       return next(new AppError('Device is not found!', 404));
     }
 
-    const result = await prisma.screenShots.findMany({
-      where: {
-        device_id: device_id,
-      },
-    });
-
-    if (result.length == 0) {
+    if (check.screenShots.length == 0) {
       return next(
         new AppError('Screenshots not found against this device_id!', 404),
       );
     }
     res.status(200).json({
       status: 'success',
-      data: result,
+      data: check.screenShots,
     });
   } catch (e) {
     const { message } = e;
@@ -611,8 +604,9 @@ exports.deleteScreenShots = catchAsync(async (req, res, next) => {
     const parsedIds = JSON.parse(ids);
     const device = parseInt(device_id);
 
-    const check = await prisma.device.findUnique({
+    const check = await prisma.device.findMany({
       where: { id: device },
+      include: { screenShots: true },
     });
 
     if (!check) {
