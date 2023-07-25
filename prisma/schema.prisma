@@ -18,20 +18,144 @@ model User {
   password String?
   phone_number String?
   address String?
+  image String?
   Child Child[]
+  fcmToken FcmToken[]
+  setting Setting?
+  notification Notification[]
   role String[] @default(["parent"])
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
-model Child {
-  id Int  @id @default(autoincrement())
-  name String?
-  phone_number String?
+model FcmToken {
+  id      Int    @id @default(autoincrement())
+  device_Token   String @unique
+  parent_Id  Int
+  user    User   @relation(fields: [parent_Id], references: [id])
+}
+
+model Setting {
+   id    Int     @id @default(autoincrement())
+  notification_enabled Boolean @default(false)
   user User? @relation(fields: [parent_id], references: [id])
+  parent_id Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+  notification_title String
+  notification_type String?
+  notification_content String
+  user User? @relation(fields:[parent_id],references: [id])
   parent_id Int
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+}
+model Child {
+  id Int  @id @default(autoincrement())
+  name String
+  phone_number String
+  image String?
+  user User? @relation(fields: [parent_id], references: [id])
+  device Device[]
+  parent_id Int 
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Device {
+  id Int @id @default(autoincrement())
+  child_id Int
+  child Child? @relation(fields: [child_id],references: [id])
+  screenLock ScreenLock?
+  screenShots ScreenShots[]
+  callLogs CallLogs[]
+  messages Messages[]
+  location Location[]
+  deviceSetting DeviceSettings[]
+  device_info String @default("pending")
+  platform String @default("pending")
+  device_name String @default("pending")
+  screenshots_enabled Boolean @default(false)
+  calllogs_enabled Boolean @default(false)
+  messages_enabled Boolean @default(false)
+  location_enable Boolean @default(false)
+  apps_usage_enable Boolean @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model DeviceSettings {
+  id Int @id @default(autoincrement())
+  screenShots_interval String?
+  callLogs_interval String?
+  messages_interval String?
+  location_interval String?
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model ScreenLock{
+ id Int @id @default(autoincrement())
+ device Device? @relation(fields: [device_id],references: [id])
+ device_id Int @unique
+ status Boolean @default(false)
+ pin Int
+ created_at DateTime @default(now())
+ updated_at DateTime @updatedAt
+}
+
+
+model ScreenShots{
+ id Int @id @default(autoincrement())
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int 
+  screenShot String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model CallLogs{
+  id Int @id @default(autoincrement())
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int @unique
+  callLogArray Json?
+  created_at DateTime @default(now())
+ updated_at DateTime @updatedAt
+
+}
+
+
+model Messages{
+  id Int @id @default(autoincrement())
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int @unique
+  messageArray Json?
+  created_at DateTime @default(now())
+ updated_at DateTime @updatedAt
+}
+
+
+model Location{
+  id Int @id @default(autoincrement())        
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int @unique
+  latitude Float
+  longitude Float
+  created_at DateTime @default(now())
+ updated_at DateTime @updatedAt
+}
+
+model Otp {
+  id            Int      @id @default(autoincrement())
+  otp           Int
+  expiration_time DateTime @default(now())
+  verified      Boolean  @default(false) @map("verified") // Use the `@map` attribute to specify the database column name
 }
 
 enum Roles {
