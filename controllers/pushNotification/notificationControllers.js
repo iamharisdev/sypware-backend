@@ -1,4 +1,3 @@
-const { promisify } = require('util');
 const AppError = require('../../utils/appError');
 const catchAsync = require('../../utils/catchAsync');
 const prisma = require('../../prisma');
@@ -8,14 +7,25 @@ exports.pushNotification = catchAsync(async (req, res, next) => {
   try {
     const { id } = req?.user;
 
-    const { title, boby, parent_id } = req?.body;
+    const { title, boby } = req?.body;
 
-    if (!parent_id || !title) {
+    if (!title) {
+      return next(new AppError('Title is required!', 400, res));
+    }
+
+    const result = await prisma.user.findFirst({
+      where: { id },
+      include: { fcmToken: true },
+    });
+
+    const tokens = result?.fcmToken;
+
+    if (!result) {
+      return next(new AppError('Parent not found!', 404, res));
+    }
+    if (tokens.length == 0) {
       return next(
-        new AppError(
-          !parent_id ? 'Parent id is required!' : 'Title is required!',
-          400,
-        ),
+        new AppError('No FcmToken found against this parent!', 404, res),
       );
     }
 
@@ -24,23 +34,34 @@ exports.pushNotification = catchAsync(async (req, res, next) => {
         title: title || 'Unkown',
         body: boby || 'This is the testing message',
       },
-      token: device_token,
+      tokens: tokens,
     };
+
     messaging
-      .send(message)
+      .sendEachForMulticast(message)
       .then((response) => {
-        res.status(200).json({
-          status: 'success',
-          data: response,
-        });
+        console.log(response.successCount + ' messages were sent successfully');
+        // Handle any failed messages if needed
+        if (response.failureCount > 0) {
+          const failedTokens = [];
+          response.responses.forEach((resp, index) => {
+            if (!resp.success) {
+              failedTokens.push(tokens[index]);
+            }
+          });
+          console.log(
+            'List of tokens that failed to receive the notification:',
+            failedTokens,
+          );
+        }
       })
       .catch((error) => {
         const { message, statusCode } = error;
-        return next(new AppError(message, statusCode));
+        return next(new AppError(message, statusCode, res));
       });
   } catch (e) {
     const { message, statusCode } = e;
-    return next(new AppError(message, statusCode));
+    return next(new AppError(message, statusCode, res));
   }
 });
 
@@ -50,14 +71,14 @@ exports.deviceToken = catchAsync(async (req, res, next) => {
     const { device_Token } = req?.body;
 
     if (!device_Token) {
-      return next(new AppError('Device token is required!', 400));
+      return next(new AppError('Device token is required!', 400, res));
     }
 
     const check = await prisma.user.findFirst({
       where: { id: id },
     });
     if (!check) {
-      return next(new AppError('Parent is not found!', 404));
+      return next(new AppError('Parent is not found!', 404, res));
     }
 
     const result = await prisma.fcmToken.create({
@@ -75,6 +96,6 @@ exports.deviceToken = catchAsync(async (req, res, next) => {
     });
   } catch (e) {
     const { message, statusCode } = e;
-    return next(new AppError(message, statusCode));
+    return next(new AppError(message, statusCode, res));
   }
 });

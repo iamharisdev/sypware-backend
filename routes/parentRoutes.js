@@ -1,6 +1,5 @@
 const express = require('express');
 const parentController = require('../controllers/parent/parentController');
-const authController = require('../controllers/authController');
 
 const router = express.Router();
 

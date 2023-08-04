@@ -10,7 +10,7 @@ const handleDuplicateFieldsDB = (err) => {
   console.log(value);
 
   const message = `Duplicate field value: ${value}. Please use another value!`;
-  return new AppError(message, 400);
+  // return new AppError(message, 400,res);
 };
 
 const handleValidationErrorDB = (err) => {
@@ -84,7 +84,7 @@ const sendErrorProd = (err, req, res) => {
   });
 };
 
-module.exports = (err, req, res, next) => {
+module.exports = (err, req, res) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 
