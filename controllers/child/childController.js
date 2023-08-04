@@ -8,13 +8,32 @@ exports.createChild = catchAsync(async (req, res, next) => {
 
   if (!name || !phone_number)
     return next(
-      new AppError('Pleaes provide both name and phone number of child!', 400),
+      new AppError(
+        'Pleaes provide both name and phone number of child!',
+        400,
+        res,
+      ),
     );
 
   if (!parent_id) {
     return next(
-      new AppError('Pleaes provide parent id. Currently it is missing!', 400),
+      new AppError(
+        'Pleaes provide parent id. Currently it is missing!',
+        400,
+        res,
+      ),
     );
+  }
+
+  const check = await prisma.user.findFirst({
+    where: {
+      id: parent_id,
+    },
+    include: { Child: true },
+  });
+
+  if (!check) {
+    return next(new AppError('Parent not found!', 404, res));
   }
 
   const newChild = await prisma.child.create({
@@ -49,7 +68,7 @@ exports.updateChild = catchAsync(async (req, res, next) => {
   });
 
   if (!existingChild) {
-    return next(new AppError('Child not found!', 400));
+    return next(new AppError('Child not found!', 400, res));
   }
 
   // Check if the parent with the specified ID exists
@@ -60,7 +79,7 @@ exports.updateChild = catchAsync(async (req, res, next) => {
   });
 
   if (!existingParent) {
-    return next(new AppError('Parent not found!', 400));
+    return next(new AppError('Parent not found!', 400, res));
   }
 
   const updatedChild = await prisma.child.update({
@@ -94,7 +113,7 @@ exports.deleteChild = catchAsync(async (req, res, next) => {
   });
 
   if (!existingChild) {
-    return next(new AppError('Child not found!', 400));
+    return next(new AppError('Child not found!', 400, res));
   }
 
   await prisma.child.delete({
@@ -114,7 +133,7 @@ exports.getAll = catchAsync(async (req, res, next) => {
     const childs = await prisma.child.findMany();
 
     if (childs.length == 0) {
-      return next(new AppError('Child not found!', 404));
+      return next(new AppError('Child not found!', 404, res));
     }
 
     res.status(200).json({
@@ -125,7 +144,7 @@ exports.getAll = catchAsync(async (req, res, next) => {
     });
   } catch (e) {
     const { message } = e;
-    return next(new AppError(message, 500));
+    return next(new AppError(message, 500, res));
   }
 });
 
@@ -134,7 +153,7 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
     const parent_id = parseInt(req?.params?.parent_id);
 
     if (!parent_id) {
-      return next(new AppError('Parent id is required!', 400));
+      return next(new AppError('Parent id is required!', 400, res));
     }
 
     const check = await prisma.user.findFirst({
@@ -144,11 +163,11 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
       include: { Child: true },
     });
     if (!check) {
-      return next(new AppError('Parent is not found!', 404));
+      return next(new AppError('Parent is not found!', 404, res));
     }
 
     if (check.length == 0) {
-      return next(new AppError('Child not found!', 404));
+      return next(new AppError('Child not found!', 404, res));
     }
     res.status(200).json({
       status: 'success',
@@ -158,6 +177,6 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
     });
   } catch (e) {
     const { message } = e;
-    return next(new AppError(message, 500));
+    return next(new AppError(message, 500, res));
   }
 });

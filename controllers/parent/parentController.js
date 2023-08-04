@@ -2,7 +2,7 @@ const AppError = require('../../utils/appError');
 const catchAsync = require('../../utils/catchAsync');
 const prisma = require('../../prisma');
 
-exports.getAll = catchAsync(async (req, res, next) => {
+exports.getAll = catchAsync(async (req, res) => {
   const childs = await prisma.user.findMany();
   res.status(200).json({
     status: 'success',
@@ -24,7 +24,7 @@ exports.getChildsByParent = catchAsync(async (req, res, next) => {
   });
   if (!children.length) {
     return next(
-      new AppError('Parent not found or no children associated', 404),
+      new AppError('Parent not found or no children associated', 404, res),
     );
   }
   res.status(200).json({

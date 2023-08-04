@@ -1,5 +1,5 @@
 class AppError extends Error {
-  constructor(message, statusCode) {
+  constructor(message, statusCode, res) {
     super(message);
 
     this.statusCode = statusCode;
@@ -7,6 +7,14 @@ class AppError extends Error {
     this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);
+
+    let errorObj = {
+      statusCode,
+      message,
+    };
+    if (res) {
+      res.status(statusCode).json(errorObj);
+    }
   }
 }
 

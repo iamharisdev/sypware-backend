@@ -1,5 +1,3 @@
-const { promisify } = require('util');
-const jwt = require('jsonwebtoken');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const prisma = require('../prisma');
@@ -14,49 +12,65 @@ const { encode, decode } = require('../middlewares/crypt');
 const SendEmail = require('../utils/email');
 
 exports.signUp = catchAsync(async (req, res, next) => {
-  const {
-    fullname,
-    email,
-    password,
-    confirm_password,
-    phone_number,
-    address,
-    role,
-  } = req.body;
+  try {
+    const { fullname, email, password, phone_number, address, role } = req.body;
 
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  //Check email in db if email already exists
-  const alreadyExists = await prisma.user.findFirst({
-    where: {
-      email: email.toLowerCase(),
-    },
-  });
+    //Check email in db if email already exists
+    const alreadyExists = await prisma.user.findFirst({
+      where: {
+        email: email.toLowerCase(),
+      },
+    });
 
-  if (alreadyExists) {
-    return next(
-      new AppError('Email already exists. Please choose a different one', 400),
-    );
+    if (alreadyExists) {
+      return next(
+        new AppError(
+          'Email already exists. Please choose a different one',
+          400,
+          res,
+        ),
+      );
+    }
+
+    const newUser = await prisma.user.create({
+      data: {
+        fullname,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        phone_number,
+        address,
+        role,
+      },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        newUser,
+      },
+    });
+  } catch (e) {
+    const { message, statusCode } = e;
+    return next(new AppError(message, statusCode, res));
   }
-
-  const newUser = await prisma.user.create({
-    data: {
-      fullname: fullname,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role,
-    },
-  });
-
-  createSendToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, device_uuid } = req.body;
 
-  if (!email || !password) {
-    return next(new AppError('Please provide email and password!', 400));
+  if (!email || !password || !device_uuid) {
+    return next(
+      new AppError(
+        !email || !password
+          ? 'Please provide email and password!'
+          : 'Device uuid is required!',
+        400,
+        res,
+      ),
+    );
   }
 
   const user = await prisma.user.findUnique({
@@ -65,11 +79,26 @@ exports.login = catchAsync(async (req, res, next) => {
     },
   });
 
+  const device = await prisma.device.findFirst({
+    where: { device_uuid },
+  });
+
   if (!user || !(await comparePassword(password, user.password))) {
-    return next(new AppError('Incorrect email or password', 401));
+    return next(new AppError('Incorrect email or password', 401, res));
   }
 
-  createSendToken(user, 200, res);
+  const obj = await createSendToken(user);
+  res.cookie('jwt', obj.token, obj.cookieOptions);
+
+  res.status(200).json({
+    status: 'success',
+    token: obj.token,
+
+    data: {
+      user,
+      device,
+    },
+  });
 });
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
@@ -77,7 +106,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     const { email } = req.body;
 
     if (!email) {
-      return next(new AppError('Email is required!', 400));
+      return next(new AppError('Email is required!', 400, res));
     }
 
     const check = await prisma.user.findUnique({
@@ -87,7 +116,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     });
 
     if (!check) {
-      return next(new AppError('Email is not found!', 404));
+      return next(new AppError('Email is not found!', 404, res));
     }
 
     const otp = Math.floor(1000 + Math.random() * 9000);
@@ -123,7 +152,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     await SendEmail(mailOptions, encoded, otp, res);
   } catch (e) {
     const { message } = e;
-    return next(new AppError(message, 401));
+    return next(new AppError(message, 500, res));
   }
 });
 
@@ -141,6 +170,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
             ? 'Verification_key is required!'
             : 'OTP is required!',
           400,
+          res,
         ),
       );
     }
@@ -150,7 +180,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
 
     // Check if the OTP was meant for the same email or phone number for which it is being verified
     if (email != obj?.check) {
-      return next(new AppError('Email is Incorrect!', 400));
+      return next(new AppError('Email is Incorrect!', 400, res));
     }
 
     const otp_instance = await prisma.Otp.findFirst({
@@ -182,23 +212,23 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
             return res.status(200).send(response);
           } else {
             const response = { status: 'failure', message: 'OTP Not Matched' };
-            return res.status(400).send(response);
+            return res.status(400, res).send(response);
           }
         } else {
           const response = { status: 'failure', message: 'OTP Expired' };
-          return res.status(400).send(response);
+          return res.status(400, res).send(response);
         }
       } else {
         const response = { status: 'failure', message: 'OTP Already Used' };
-        return res.status(400).send(response);
+        return res.status(400, res).send(response);
       }
     } else {
       const response = { status: 'failure', message: 'Bad Request' };
-      return res.status(400).send(response);
+      return res.status(400, res).send(response);
     }
   } catch (e) {
     const { message } = e;
-    return next(new AppError(message, 400));
+    return next(new AppError(message, 500, res));
   }
 });
 
@@ -217,6 +247,7 @@ exports.changePassword = catchAsync(async (req, res, next) => {
             ? 'Password is required!'
             : 'OTP is required!',
           401,
+          res,
         ),
       );
     }
@@ -228,7 +259,7 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     });
 
     if (!check) {
-      return next(new AppError('User not found!', 404));
+      return next(new AppError('User not found!', 404, res));
     }
 
     const check_otp_verified = await prisma.otp.findFirst({
@@ -238,10 +269,10 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     });
 
     if (!check_otp_verified) {
-      return next(new AppError('Enter correct OTP!', 400));
+      return next(new AppError('Enter correct OTP!', 400, res));
     }
     if (!check_otp_verified?.verified) {
-      return next(new AppError('OTP is not verified!', 400));
+      return next(new AppError('OTP is not verified!', 400, res));
     }
 
     //Delete OTP record after verified
@@ -266,7 +297,7 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     });
   } catch (e) {
     const { message } = e;
-    return next(new AppError(message, 500));
+    return next(new AppError(message, 500, res));
   }
 });
 
@@ -290,7 +321,11 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   if (!token) {
     return next(
-      new AppError('You are not logged in! Please log in to get access.', 401),
+      new AppError(
+        'You are not logged in! Please log in to get access.',
+        401,
+        res,
+      ),
     );
   }
 });

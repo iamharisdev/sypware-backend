@@ -59,8 +59,9 @@ model Child {
   name String
   phone_number String
   image String?
-  user User? @relation(fields: [parent_id], references: [id])
+  user User? @relation(fields: [parent_id], references: [id]) 
   device Device[]
+  
   parent_id Int 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -76,11 +77,12 @@ model Device {
   messages Messages[]
   location Location[]
   deviceSetting DeviceSettings[]
+  device_uuid String @default("pending")
   device_info String @default("pending")
   platform String @default("pending")
   device_name String @default("pending")
   screenshots_enabled Boolean @default(false)
-  calllogs_enabled Boolean @default(false)
+  calllogs_enabled Boolean @default(false)                       
   messages_enabled Boolean @default(false)
   location_enable Boolean @default(false)
   apps_usage_enable Boolean @default(false)
@@ -152,10 +154,10 @@ model Location{
 }
 
 model Otp {
-  id            Int      @id @default(autoincrement())
-  otp           Int
+  id Int @id @default(autoincrement())
+  otp Int
   expiration_time DateTime @default(now())
-  verified      Boolean  @default(false) @map("verified") // Use the `@map` attribute to specify the database column name
+  verified Boolean  @default(false) @map("verified") // Use the `@map` attribute to specify the database column name
 }
 
 enum Roles {

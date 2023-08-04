@@ -5,16 +5,25 @@ CREATE TYPE "Roles" AS ENUM ('parent', 'moderator');
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
-    "fullname" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
-    "phone_number" TEXT NOT NULL,
-    "address" TEXT NOT NULL,
+    "fullname" TEXT,
+    "password" TEXT,
+    "phone_number" TEXT,
+    "address" TEXT,
     "image" TEXT,
     "role" TEXT[] DEFAULT ARRAY['parent']::TEXT[],
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "FcmToken" (
+    "id" SERIAL NOT NULL,
+    "device_Token" TEXT NOT NULL,
+    "parent_Id" INTEGER NOT NULL,
+
+    CONSTRAINT "FcmToken_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -58,6 +67,7 @@ CREATE TABLE "Child" (
 CREATE TABLE "Device" (
     "id" SERIAL NOT NULL,
     "child_id" INTEGER NOT NULL,
+    "device_uuid" TEXT NOT NULL DEFAULT 'pending',
     "device_info" TEXT NOT NULL DEFAULT 'pending',
     "platform" TEXT NOT NULL DEFAULT 'pending',
     "device_name" TEXT NOT NULL DEFAULT 'pending',
@@ -157,6 +167,9 @@ CREATE TABLE "Otp" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "FcmToken_device_Token_key" ON "FcmToken"("device_Token");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Setting_parent_id_key" ON "Setting"("parent_id");
 
 -- CreateIndex
@@ -173,6 +186,9 @@ CREATE UNIQUE INDEX "Messages_device_id_key" ON "Messages"("device_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Location_device_id_key" ON "Location"("device_id");
+
+-- AddForeignKey
+ALTER TABLE "FcmToken" ADD CONSTRAINT "FcmToken_parent_Id_fkey" FOREIGN KEY ("parent_Id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Setting" ADD CONSTRAINT "Setting_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

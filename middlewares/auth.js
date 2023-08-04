@@ -10,7 +10,11 @@ exports.auth = (req, res, next) => {
 
   if (!berearToken) {
     return next(
-      new AppError('You are not logged in! Please log in to get access.', 401),
+      new AppError(
+        'You are not logged in! Please log in to get access.',
+        401,
+        res,
+      ),
     );
   }
   try {
@@ -20,6 +24,6 @@ exports.auth = (req, res, next) => {
     req.user = payload;
     next();
   } catch (e) {
-    return next(new AppError(e.message, 400));
+    return next(new AppError(e.message, 400, res));
   }
 };

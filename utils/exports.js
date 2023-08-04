@@ -67,7 +67,7 @@ async function comparePassword(password, hashedPassword) {
   return await bcrypt.compare(password, hashedPassword);
 }
 
-const createSendToken = async (user, statusCode, res) => {
+const createSendToken = async (user) => {
   const token = signToken(user.id);
   const cookieOptions = {
     expires: new Date(
@@ -77,16 +77,11 @@ const createSendToken = async (user, statusCode, res) => {
   };
 
   if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-  res.cookie('jwt', token, cookieOptions);
+
   // Remove password from output
   user.password = undefined;
-  res.status(statusCode).json({
-    status: 'success',
-    token,
-    data: {
-      user,
-    },
-  });
+
+  return { token, cookieOptions };
 };
 
 module.exports = { AddMinutesToDate, dates, comparePassword, createSendToken };
