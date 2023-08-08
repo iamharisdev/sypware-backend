@@ -59,18 +59,11 @@ exports.signUp = catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, password, device_uuid } = req.body;
+  const { email, password, device_uuid, platform } = req.body;
+  var device;
 
-  if (!email || !password || !device_uuid) {
-    return next(
-      new AppError(
-        !email || !password
-          ? 'Please provide email and password!'
-          : 'Device uuid is required!',
-        400,
-        res,
-      ),
-    );
+  if (!email || !password) {
+    return next(new AppError('Please provide email and password!', 400, res));
   }
 
   const user = await prisma.user.findUnique({
@@ -79,9 +72,11 @@ exports.login = catchAsync(async (req, res, next) => {
     },
   });
 
-  const device = await prisma.device.findFirst({
-    where: { device_uuid },
-  });
+  if (platform == 'mobile') {
+    device = await prisma.device.findFirst({
+      where: { device_uuid },
+    });
+  }
 
   if (!user || !(await comparePassword(password, user.password))) {
     return next(new AppError('Incorrect email or password', 401, res));
@@ -93,10 +88,9 @@ exports.login = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     token: obj.token,
-
     data: {
       user,
-      device,
+      device: platform == 'mobile' ? device : null,
     },
   });
 });
@@ -232,20 +226,19 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.changePassword = catchAsync(async (req, res, next) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
   try {
     const { email, password, otp } = req?.body;
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+    if (!otp) {
+      return next(new AppError('OTP is required!', 400, res));
+    }
 
-    if (!email || !password || !otp) {
+    if (!email || !password) {
       return next(
         new AppError(
-          !email
-            ? 'Email is required!'
-            : !password
-            ? 'Password is required!'
-            : 'OTP is required!',
+          !email ? 'Email is required!' : 'Password is required!',
           401,
           res,
         ),
@@ -298,6 +291,80 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   } catch (e) {
     const { message } = e;
     return next(new AppError(message, 500, res));
+  }
+});
+
+exports.changePassword = catchAsync(async (req, res, next) => {
+  try {
+    const { email, password } = req?.body;
+    const { id } = req?.user;
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (!password) {
+      return next(new AppError('Password is required!', 401, res));
+    }
+
+    const check = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!check) {
+      return next(new AppError('User not found!', 404, res));
+    }
+
+    const result = await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: result,
+    });
+  } catch (e) {
+    const { message } = e;
+    return next(new AppError(message, 500, res));
+  }
+});
+
+exports.updateUser = catchAsync(async (req, res, next) => {
+  try {
+    const { fullname, email, phone_number, address, role, profileImage } =
+      req.body;
+
+    const { id } = req?.user;
+    const { path } = req?.file;
+
+    const result = await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        fullname,
+        email: email.toLowerCase(),
+        phone_number,
+        address,
+        image: path,
+        role,
+      },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        result,
+      },
+    });
+  } catch (e) {
+    const { message, statusCode } = e;
+    return next(new AppError(message, statusCode, res));
   }
 });
 
