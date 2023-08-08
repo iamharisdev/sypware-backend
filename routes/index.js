@@ -8,6 +8,7 @@ const callLogsRoute = require('./callLogsRoutes');
 const messagesRouter = require('./messageRouters');
 const screenshotRouter = require('./screenshotRouters');
 const locationRouter = require('./locationRoutes');
+const appUsagesRouter = require('./appUsagesRoutes');
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use('/calllogs', callLogsRoute);
 router.use('/messages', messagesRouter);
 router.use('/screenshots', screenshotRouter);
 router.use('/location', locationRouter);
+router.use('/app_Usages', appUsagesRouter);
 
 module.exports = router;

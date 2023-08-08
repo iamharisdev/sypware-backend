@@ -22,22 +22,27 @@ exports.createMessages = catchAsync(async (req, res, next) => {
       },
     });
 
-    if (check) {
-      return next(
-        new AppError(
-          `Record already exist with device_id ${device_id} `,
-          400,
-          res,
-        ),
-      );
+    if (!check) {
+      const result = await prisma.messages.create({
+        data: {
+          device_id: device_id,
+          messageArray: messageArray,
+        },
+      });
+      res.status(200).json({
+        status: 'success',
+        data: result,
+      });
     }
-
-    const result = await prisma.messages.create({
-      data: {
+    const result = await prisma.messages.update({
+      where: {
         device_id: device_id,
+      },
+      data: {
         messageArray: messageArray,
       },
     });
+
     res.status(200).json({
       status: 'success',
       data: result,

@@ -76,6 +76,7 @@ model Device {
   callLogs CallLogs[]
   messages Messages[]
   location Location[]
+  appUsages AppUsages[]
   deviceSetting DeviceSettings[]
   device_uuid String @default("pending")
   device_info String @default("pending")
@@ -118,6 +119,15 @@ model ScreenShots{
   device Device? @relation(fields: [device_id],references: [id])
   device_id Int 
   screenShot String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model AppUsages{
+ id Int @id @default(autoincrement())
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int 
+  apps Json?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
