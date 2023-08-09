@@ -77,7 +77,8 @@ model Device {
   messages Messages[]
   location Location[]
   appUsages AppUsages[]
-  deviceSetting DeviceSettings[]
+ 
+  modulesTime ModulesTime[]
   device_uuid String @default("pending")
   device_info String @default("pending")
   platform String @default("pending")
@@ -91,17 +92,7 @@ model Device {
   updated_at DateTime @updatedAt
 }
 
-model DeviceSettings {
-  id Int @id @default(autoincrement())
-  screenShots_interval String?
-  callLogs_interval String?
-  messages_interval String?
-  location_interval String?
-  device Device? @relation(fields: [device_id],references: [id])
-  device_id Int @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-}
+
 
 model ScreenLock{
  id Int @id @default(autoincrement())
@@ -142,7 +133,6 @@ model CallLogs{
 
 }
 
-
 model Messages{
   id Int @id @default(autoincrement())
   device Device? @relation(fields: [device_id],references: [id])
@@ -168,6 +158,19 @@ model Otp {
   otp Int
   expiration_time DateTime @default(now())
   verified Boolean  @default(false) @map("verified") // Use the `@map` attribute to specify the database column name
+}
+
+model ModulesTime{
+  id Int @id @default(autoincrement())
+  screenShots_interval String?
+  callLogs_interval String?
+  messages_interval String?
+  location_interval String?
+  appUsage_interval String?
+  device Device? @relation(fields: [device_id],references: [id])
+  device_id Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 enum Roles {
