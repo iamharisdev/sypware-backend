@@ -149,9 +149,12 @@ exports.getAll = catchAsync(async (req, res, next) => {
 });
 
 exports.getChildsByParentId = catchAsync(async (req, res, next) => {
+  const parent_id = parseInt(req?.query?.parentId);
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = 20;
   try {
-    const parent_id = parseInt(req?.params?.parent_id);
-
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
     if (!parent_id) {
       return next(new AppError('Parent id is required!', 400, res));
     }
@@ -160,13 +163,18 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
       where: {
         id: parent_id,
       },
-      include: { Child: true },
+      include: {
+        Child: {
+          skip,
+          take,
+        },
+      },
     });
     if (!check) {
       return next(new AppError('Parent is not found!', 404, res));
     }
 
-    if (check.length == 0) {
+    if (check.Child.length == 0) {
       return next(new AppError('Child not found!', 404, res));
     }
     res.status(200).json({
