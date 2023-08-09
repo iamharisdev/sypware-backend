@@ -19,10 +19,14 @@ exports.createDevice = catchAsync(async (req, res, next) => {
       where: {
         id: child_id,
       },
+      include: { device: true },
     });
 
     if (!check) {
       return next(new AppError('Child is not found!', 404, res));
+    }
+    if (check.device.length != 0) {
+      return next(new AppError('Already device assign', 400, res));
     }
 
     const newDevice = await prisma.device.create({
@@ -150,31 +154,99 @@ exports.getDevicebyDeviceId = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.createModulesTime = catchAsync(async (req, res, next) => {
+exports.getDevicebyChildId = catchAsync(async (req, res, next) => {
+  const id = parseInt(req?.query?.child_id);
+
   try {
-    const { device_id, data } = req?.body;
+    if (!id) {
+      return next(new AppError('Child id is required!', 400, res));
+    }
+
+    const check = await prisma.child.findFirst({
+      where: { id },
+      include: { device: true },
+    });
+
+    if (!check) {
+      return next(new AppError('Child not found!', 404, res));
+    }
+
+    if (check.device.length == 0) {
+      return next(
+        new AppError('There is no device assign this user', 404, res),
+      );
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: check.device,
+    });
+  } catch (e) {
+    const { message, statusCode } = e;
+    return next(new AppError(message, statusCode, res));
+  }
+});
+
+exports.ModulesTime = catchAsync(async (req, res, next) => {
+  try {
+    const { device_id, modules_enabled, modules_time } = req?.body;
 
     if (!device_id) {
-      return next(new AppError('Device_id is required!', 400, res));
+      return next(new AppError('Device id is required!', 400, res));
     }
 
     const check = await prisma.device.findFirst({
       where: {
         id: device_id,
       },
+      include: { modulesTime: true },
     });
 
     if (!check) {
       return next(new AppError('Device not found!', 404, res));
     }
 
-    const result = await prisma.deviceSettings.create({
-      data: data,
+    const device = await prisma.device.update({
+      where: {
+        id: device_id,
+      },
+      data: modules_enabled,
+    });
+
+    if (check.modulesTime.length == 0) {
+      const time = await prisma.modulesTime.create({
+        data: {
+          ...modules_time,
+          device: {
+            connect: {
+              id: device_id,
+            },
+          },
+        },
+      });
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          device: device,
+          moduleTimes: time,
+        },
+      });
+    }
+
+    const time = await prisma.modulesTime.update({
+      where: {
+        device_id,
+      },
+      data: modules_time,
     });
 
     res.status(200).json({
       status: 'success',
-      data: result,
+      data: {
+        device: device,
+        moduleTime: time,
+      },
     });
   } catch (e) {
     const { message } = e;
