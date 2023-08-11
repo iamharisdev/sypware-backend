@@ -1,0 +1,27 @@
+name: Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Deploy to server
+        run: |
+          mkdir -p ~/.ssh
+          sudo apt-get install openssh-client -y
+          echo "${{ secrets.KEY }}" >> ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -tt "${{ secrets.USER }}"@"${{ secrets.I }}" "cd /var/www/html/spyware && pwd && git pull && npm install --force && npx prisma migrate dev && systemctl restart spyware.service && echo  "pipeline successful"
