@@ -349,20 +349,32 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     const { fullname, email, phone_number, address, role } = req.body;
 
     const { id } = req?.user;
-    const { path } = req?.file;
-
-    const result = await prisma.user.update({
-      where: {
-        id,
-      },
-      data: {
+    let obj;
+    if (req?.file) {
+      const { path } = req?.file;
+      obj = {
         fullname,
         email: email.toLowerCase(),
         phone_number,
         address,
         image: path,
         role,
+      };
+    } else {
+      obj = {
+        fullname,
+        email: email.toLowerCase(),
+        phone_number,
+        address,
+        role,
+      };
+    }
+
+    const result = await prisma.user.update({
+      where: {
+        id,
       },
+      data: obj,
     });
 
     res.status(200).json({
@@ -373,7 +385,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     });
   } catch (e) {
     const { message, statusCode } = e;
-    return next(new AppError(message, statusCode, res));
+    return next(new AppError(message, 500, res));
   }
 });
 
