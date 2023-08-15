@@ -174,9 +174,9 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
       return next(new AppError('Parent is not found!', 404, res));
     }
 
-    if (check.Child.length == 0) {
-      return next(new AppError('Child not found!', 404, res));
-    }
+    // if (check.Child.length == 0) {
+    //   return next(new AppError('Child not found!', 404, res));
+    // }
     res.status(200).json({
       status: 'success',
       data: {
