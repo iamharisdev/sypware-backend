@@ -296,13 +296,19 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 exports.changePassword = catchAsync(async (req, res, next) => {
   try {
-    const { email, password } = req?.body;
+    const { currentPassword, password } = req?.body;
     const { id } = req?.user;
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    if (!password) {
-      return next(new AppError('Password is required!', 401, res));
+    if (!password || !currentPassword) {
+      return next(
+        new AppError(
+          !password ? 'Password is required!' : 'Current Password is required!',
+          401,
+          res,
+        ),
+      );
     }
 
     const check = await prisma.user.findUnique({
@@ -313,6 +319,10 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
     if (!check) {
       return next(new AppError('User not found!', 404, res));
+    }
+
+    if (!(await comparePassword(currentPassword, check.password))) {
+      return next(new AppError('Current Password is not matched', 401, res));
     }
 
     const result = await prisma.user.update({
@@ -336,24 +346,35 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
 exports.updateUser = catchAsync(async (req, res, next) => {
   try {
-    const { fullname, email, phone_number, address, role, profileImage } =
-      req.body;
+    const { fullname, email, phone_number, address, role } = req.body;
 
     const { id } = req?.user;
-    const { path } = req?.file;
-
-    const result = await prisma.user.update({
-      where: {
-        id,
-      },
-      data: {
+    let obj;
+    if (req?.file) {
+      const { path } = req?.file;
+      obj = {
         fullname,
         email: email.toLowerCase(),
         phone_number,
         address,
         image: path,
         role,
+      };
+    } else {
+      obj = {
+        fullname,
+        email: email.toLowerCase(),
+        phone_number,
+        address,
+        role,
+      };
+    }
+
+    const result = await prisma.user.update({
+      where: {
+        id,
       },
+      data: obj,
     });
 
     res.status(200).json({
@@ -364,7 +385,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     });
   } catch (e) {
     const { message, statusCode } = e;
-    return next(new AppError(message, statusCode, res));
+    return next(new AppError(message, 500, res));
   }
 });
 

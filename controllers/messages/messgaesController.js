@@ -16,6 +16,16 @@ exports.createMessages = catchAsync(async (req, res, next) => {
       );
     }
 
+    const device = await prisma.device.findUnique({
+      where: {
+        id: device_id,
+      },
+    });
+
+    if (!device) {
+      return next(new AppError('Device not found!', 404, res));
+    }
+
     const check = await prisma.messages.findUnique({
       where: {
         device_id: device_id,
