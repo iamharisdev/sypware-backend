@@ -53,8 +53,8 @@ exports.signUp = catchAsync(async (req, res, next) => {
       },
     });
   } catch (e) {
-    const { message, statusCode } = e;
-    return next(new AppError(message, statusCode, res));
+    const { message } = e;
+    return next(new AppError(message, 500, res));
   }
 });
 

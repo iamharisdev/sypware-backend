@@ -151,7 +151,7 @@ exports.getAll = catchAsync(async (req, res, next) => {
 exports.getChildsByParentId = catchAsync(async (req, res, next) => {
   const parent_id = parseInt(req?.query?.parentId);
   const page = parseInt(req.query.page) || 1;
-  const pageSize = 20;
+  const pageSize = 10;
   try {
     const skip = (page - 1) * pageSize;
     const take = pageSize;
@@ -159,7 +159,21 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
       return next(new AppError('Parent id is required!', 400, res));
     }
 
-    const check = await prisma.user.findFirst({
+    // Fetch the total count of child records for the given parent ID
+    const totalCount = await prisma.child.count({
+      where: {
+        parent_id,
+      },
+    });
+
+    if (totalCount === 0) {
+      return next(new AppError('Parent is not found!', 404, res));
+    }
+
+    // Calculate total_pages based on the totalCount and pageSize
+    const total_pages = Math.ceil(totalCount / pageSize);
+
+    const check = await prisma.user.findMany({
       where: {
         id: parent_id,
       },
@@ -170,17 +184,16 @@ exports.getChildsByParentId = catchAsync(async (req, res, next) => {
         },
       },
     });
-    if (!check) {
-      return next(new AppError('Parent is not found!', 404, res));
-    }
 
-    // if (check.Child.length == 0) {
-    //   return next(new AppError('Child not found!', 404, res));
-    // }
+    console.log('[check]', check[0].Child);
+
     res.status(200).json({
       status: 'success',
       data: {
-        childs: check.Child,
+        total: totalCount,
+        total_pages,
+        current_page: page,
+        childs: check[0].Child,
       },
     });
   } catch (e) {
