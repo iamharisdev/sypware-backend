@@ -3,9 +3,9 @@
 # Run this cmd in the root file for install the nodemodules
  npm i
 
-# Set your .env config
+# Set your .env
 
-DATABASE_URL="your DB url"
+DATABASE_URL="YOUR POSTGRES DATABASE URL"
 JWT_SECRET=
 JWT_EXPIRES_IN=
 NODE_ENV=developmen
